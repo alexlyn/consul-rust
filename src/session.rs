@@ -9,11 +9,15 @@ use error::ConsulResult;
 use std::error::Error;
 
 pub const SESSION_TTL: &'static str = "15s";
+pub const SESSION_BEHAVIOR_RELEASE: &'static str = "release";
+#[allow(dead_code)]
+pub const SESSION_BEHAVIOR_DELETE: &'static str = "delete";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SessionCreate {
-    Name: String,
-    TTL: String
+    pub Name: String,
+    pub TTL: String,
+    pub Behavior: String
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -35,9 +39,21 @@ impl Session {
     pub fn create(&self, name: String) -> ConsulResult<Option<String>> {
         let session = SessionCreate {
             Name: name,
-            TTL: self::SESSION_TTL.to_owned()
+            TTL: self::SESSION_TTL.to_owned(),
+            Behavior: self::SESSION_BEHAVIOR_RELEASE.to_owned()
         };
         let json_str = serde_json::to_string(&session)
+            .map_err(|e| e.description().to_owned())?;
+
+        let result = self.handler.put("create", json_str, Some("application/json"))?;
+
+        let json_data = serde_json::from_str(&result)
+            .map_err(|e| e.description().to_owned())?;
+        Ok(super::get_string(&json_data, &["ID"]))
+    }
+
+    pub fn create_with_options(&self, options: SessionCreate) -> ConsulResult<Option<String>> {
+        let json_str = serde_json::to_string(&options)
             .map_err(|e| e.description().to_owned())?;
 
         let result = self.handler.put("create", json_str, Some("application/json"))?;
@@ -67,5 +83,14 @@ impl Session {
         Ok(())
     }
 
+}
 
+impl SessionCreate {
+    pub fn new(name: String) -> SessionCreate {
+        SessionCreate {
+            Name: name,
+            TTL: self::SESSION_TTL.to_owned(),
+            Behavior: self::SESSION_BEHAVIOR_RELEASE.to_owned()
+        }
+    }
 }

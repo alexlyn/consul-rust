@@ -44,7 +44,7 @@ pub use catalog::{Catalog, ServiceNode};
 pub use health::Health;
 pub use client::Client;
 pub use keystore::Keystore;
-pub use session::Session;
+pub use session::{Session, SessionCreate, SESSION_BEHAVIOR_RELEASE, SESSION_BEHAVIOR_DELETE};
 pub use structs::{Node, Service, HealthService, RegisterService, TtlHealthCheck};
 
 mod agent;
